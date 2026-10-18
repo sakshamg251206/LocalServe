@@ -1,0 +1,30 @@
+# MINIMUM-scope sweep (re-scoped for an 8 GB M2 Air: 2k context per slot, no 4k prompts).
+model: qwen3-1.7b
+quants: [Q8_0, Q5_K_M, Q4_K_M]
+parallel: [1, 4]
+ctx_per_slot: 2048
+# Arrival-rate grid (req/s) per parallel setting. Chosen from a pilot run (docs/LOG.md) so that the
+# top of each grid is past saturation: 4 slots peaked near 1.1 req/s at 128 output tokens.
+rates:
+  1: [0.05, 0.1, 0.15, 0.2, 0.3, 0.4]
+  4: [0.1, 0.2, 0.3, 0.4, 0.5, 0.7]
+repeats: 3
+duration_s: 60
+warmup_s: 15
+cooldown_s: 15          # idle gap between points (thermal recovery on a fanless machine)
+max_tokens: 128
+prompt_words: 150       # ~177 prompt tokens incl. chat template (measured in pilot)
+request_timeout_s: 60
+seed_base: 1000         # same seed for a given (rate, repeat) across quants: paired schedules
+order_seed: 7           # shuffles config and rate order within each repeat
+gateway: {max_queue: 64}
+ports: {llama: 8080, gateway: 8000}
+# Phase "p70": 3 runs per config at 0.7 x measured capacity (Table 2).
+p70_fraction: 0.7
+# Phase "overhead": gateway vs direct on one config.
+overhead:
+  quant: Q4_K_M
+  parallel: 4
+  serial_pairs: 100     # idle server, one request at a time, alternating direct/gateway
+  serial_max_tokens: 32
+  rates: [0.2, 0.4]     # open-loop, identical schedules with and without the gateway

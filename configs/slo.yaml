@@ -1,0 +1,3 @@
+# Fixed before any measurement (spec §5). Not tuned afterwards.
+chat: {ttft_p95_s: 1.0}
+rag: {ttft_p95_s: 2.5}  # used from the STRONG scope on
