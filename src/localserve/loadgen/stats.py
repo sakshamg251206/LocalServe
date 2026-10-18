@@ -23,6 +23,15 @@ def pct(x: Sequence[float] | np.ndarray, q: float) -> float:
     return float(np.percentile(a, q, method="inverted_cdf"))
 
 
+def in_window(results: Sequence[RequestResult], warmup_s: float, duration_s: float) -> list[RequestResult]:
+    return [r for r in results if warmup_s <= r.t_sched < warmup_s + duration_s]
+
+
+def ttft_for_slo(win: Sequence[RequestResult]) -> list[float]:
+    """TTFT per request, with failed/rejected/timed-out requests counted as infinite."""
+    return [r.ttft_s if (r.ok and r.ttft_s is not None) else math.inf for r in win]
+
+
 def summarize_run(results: Sequence[RequestResult], warmup_s: float, duration_s: float) -> dict[str, Any]:
     """Summarize requests *scheduled* in [warmup_s, warmup_s + duration_s).
 
@@ -30,10 +39,10 @@ def summarize_run(results: Sequence[RequestResult], warmup_s: float, duration_s:
     the offered load. Rejections (429), timeouts and errors count as SLO misses: `ttft_p95_slo_s`
     treats them as infinite TTFT, so a server cannot pass the SLO by dropping its slow requests.
     """
-    win = [r for r in results if warmup_s <= r.t_sched < warmup_s + duration_s]
+    win = in_window(results, warmup_s, duration_s)
     ok = [r for r in win if r.ok]
     ttft_ok = [r.ttft_s for r in ok if r.ttft_s is not None]
-    ttft_all = [r.ttft_s if (r.ok and r.ttft_s is not None) else math.inf for r in win]
+    ttft_all = ttft_for_slo(win)
     itl = [g for r in ok for g in r.itl_s]
     e2e = [r.e2e_s for r in ok]
     tpot = [t for r in ok if (t := r.tpot_s) is not None]

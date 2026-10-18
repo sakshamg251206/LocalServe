@@ -48,6 +48,10 @@ extend-exclude = [".vendor", "models", "data"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Markdown table templates: long lines and typographic characters (×, –, ≤) are intended output.
+"scripts/make_report.py" = ["E501", "RUF001"]
+
 [tool.mypy]
 strict = true
 python_version = "3.12"
