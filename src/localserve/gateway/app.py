@@ -309,6 +309,7 @@ def main() -> None:
     import uvicorn
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # keep stdout = one JSON line per request
     settings = GatewaySettings.from_env()
     app = create_app(HttpUpstream(settings.upstream_url, settings.request_timeout_s), settings)
     uvicorn.run(
