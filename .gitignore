@@ -1,0 +1,14 @@
+# third-party code, weights and data are fetched at run time (never committed)
+.vendor/
+models/
+data/
+.cache/
+results/*/raw/*.log
+# python
+.venv/
+__pycache__/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.DS_Store
