@@ -63,8 +63,9 @@ def _res(t: float, ok: bool, ttft: float | None, status: int = 200, tokens: int 
         error=None if ok else "x",
         ttft_s=ttft,
         itl_s=[0.02] * (tokens - 1) if ok else [],
-        e2e_s=(ttft or 0) + 0.2,
-        n_tokens=tokens if ok else 0,
+        e2e_s=(ttft or 0) + 0.02 * (tokens - 1),
+        n_events=tokens - 1 if ok else 0,  # one event carried two tokens
+        completion_tokens=tokens if ok else None,
         prompt_tokens=200,
     )
 
@@ -84,6 +85,8 @@ def test_summary_excludes_warmup_and_counts_failures_against_slo() -> None:
     # with 2 of 20 failed (inf), nearest-rank p95 = 19th smallest = inf
     assert s["ttft_p95_slo_s"] == math.inf
     assert s["itl_p50_s"] == pytest.approx(0.02)
+    assert s["tpot_p50_s"] == pytest.approx(0.02)  # (e2e - ttft) / (10 - 1)
+    assert s["output_tokens_mean"] == 10  # from usage, not the 9 events
 
 
 async def test_client_measures_ttft_itl_tokens_against_fake() -> None:
@@ -92,7 +95,8 @@ async def test_client_measures_ttft_itl_tokens_against_fake() -> None:
         body = {"model": "m", "messages": [{"role": "user", "content": "x"}], "stream": True}
         r = await send_chat(c, "/v1/chat/completions", body, timeout_s=5)
     assert r.ok and r.status == 200
-    assert r.n_tokens == 6 and len(r.itl_s) == 5
+    assert r.n_events == 6 and r.n_tokens == 6 and len(r.itl_s) == 5  # fake sends no usage chunk
+    assert r.tpot_s is not None and 0.04 <= r.tpot_s < 0.12
     assert r.ttft_s is not None and 0.2 <= r.ttft_s < 0.35
     assert all(0.04 <= g < 0.12 for g in r.itl_s)
     assert r.e2e_s >= r.ttft_s + 0.25

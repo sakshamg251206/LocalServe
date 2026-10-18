@@ -21,10 +21,24 @@ class RequestResult:
     status: int  # HTTP status; 0 = client timeout or connection error
     error: str | None
     ttft_s: float | None  # send -> first generated token
-    itl_s: list[float] = field(default_factory=list)  # gaps between consecutive tokens
+    # Gaps between consecutive token-bearing SSE events: the stall a reader sees. Usually one token
+    # per event, but llama-server sometimes holds a token back and sends it merged with the next.
+    itl_s: list[float] = field(default_factory=list)
     e2e_s: float = 0.0
-    n_tokens: int = 0  # token-bearing SSE events (llama-server streams one token per event)
-    prompt_tokens: int | None = None  # from the final `usage` chunk, if the server sends one
+    n_events: int = 0  # token-bearing SSE events
+    completion_tokens: int | None = None  # authoritative, from the final `usage` chunk
+    prompt_tokens: int | None = None
+
+    @property
+    def n_tokens(self) -> int:
+        return self.completion_tokens if self.completion_tokens is not None else self.n_events
+
+    @property
+    def tpot_s(self) -> float | None:
+        """Time per output token after the first: (e2e - ttft) / (tokens - 1)."""
+        if self.ttft_s is None or self.n_tokens < 2:
+            return None
+        return (self.e2e_s - self.ttft_s) / (self.n_tokens - 1)
 
     @property
     def ok(self) -> bool:
@@ -69,13 +83,14 @@ async def send_chat(
                     else:
                         res.itl_s.append(now - last)
                     last = now
-                    res.n_tokens += 1
+                    res.n_events += 1
                 elif '"usage"' in data or '"error"' in data:
                     obj = json.loads(data)
                     if obj.get("error"):
                         res.error = str(obj["error"])[:200]
                     if obj.get("usage"):
                         res.prompt_tokens = obj["usage"].get("prompt_tokens")
+                        res.completion_tokens = obj["usage"].get("completion_tokens")
             else:
                 res.error = res.error or "stream ended without [DONE]"
     except TimeoutError:

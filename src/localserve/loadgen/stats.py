@@ -36,6 +36,7 @@ def summarize_run(results: Sequence[RequestResult], warmup_s: float, duration_s:
     ttft_all = [r.ttft_s if (r.ok and r.ttft_s is not None) else math.inf for r in win]
     itl = [g for r in ok for g in r.itl_s]
     e2e = [r.e2e_s for r in ok]
+    tpot = [t for r in ok if (t := r.tpot_s) is not None]
     prompt_toks = [r.prompt_tokens for r in ok if r.prompt_tokens is not None]
     n = len(win)
     return {
@@ -53,6 +54,8 @@ def summarize_run(results: Sequence[RequestResult], warmup_s: float, duration_s:
         "ttft_p95_slo_s": pct(ttft_all, 95),
         "itl_p50_s": pct(itl, 50),
         "itl_p95_s": pct(itl, 95),
+        "tpot_p50_s": pct(tpot, 50),
+        "tpot_p95_s": pct(tpot, 95),
         "e2e_p50_s": pct(e2e, 50),
         "e2e_p95_s": pct(e2e, 95),
         "output_tokens_mean": float(np.mean([r.n_tokens for r in ok])) if ok else math.nan,
