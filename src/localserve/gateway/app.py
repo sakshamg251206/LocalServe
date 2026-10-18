@@ -14,7 +14,7 @@ import asyncio
 import json
 import logging
 import os
-from collections.abc import AsyncGenerator, AsyncIterator, Coroutine
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Coroutine
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
 from typing import Any
@@ -22,6 +22,7 @@ from typing import Any
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from starlette.types import Receive, Scope, Send
 
 from .metrics import GatewayMetrics, RequestRecord
 from .queue import Admission, QueueFull, Slot
@@ -111,6 +112,42 @@ async def _unless_disconnected[T](request: Request, coro: Coroutine[Any, Any, T]
     with suppress(BaseException):
         await work
     raise ClientDisconnected
+
+
+@dataclass
+class _StreamJob:
+    """State of one streaming response. `close()` is idempotent and is called both from the relay
+    generator's `finally` and after the response finishes, because if sending the headers fails
+    the generator never starts and its `finally` never runs (the slot would leak forever)."""
+
+    stream: AsyncGenerator[str, None]
+    slot: Slot
+    rec: RequestRecord
+    metrics: GatewayMetrics
+    finished: bool = False
+    closed: bool = False
+
+    async def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
+        if not self.finished and self.rec.outcome == "ok":
+            self.rec.outcome = "cancelled"
+        self.slot.release()  # before the await below, so a cancellation there can't skip it
+        self.metrics.finish(self.rec)
+        await self.stream.aclose()
+
+
+class _GuardedStream(StreamingResponse):
+    def __init__(self, content: AsyncIterator[bytes], on_close: Callable[[], Awaitable[None]]) -> None:
+        super().__init__(content, media_type="text/event-stream")
+        self._on_close = on_close
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            await self._on_close()
 
 
 def create_app(upstream: Upstream, settings: GatewaySettings) -> FastAPI:
@@ -233,13 +270,12 @@ def create_app(upstream: Upstream, settings: GatewaySettings) -> FastAPI:
 
         if head and has_token(head[-1]):
             rec.ttft_s = rec.elapsed()
-        return StreamingResponse(_relay(head, stream, slot, rec), media_type="text/event-stream")
+        job = _StreamJob(stream, slot, rec, metrics)
+        return _GuardedStream(_relay(head, job), job.close)
 
-    async def _relay(
-        head: list[str], stream: AsyncGenerator[str, None], slot: Slot, rec: RequestRecord
-    ) -> AsyncIterator[bytes]:
+    async def _relay(head: list[str], job: _StreamJob) -> AsyncIterator[bytes]:
+        rec = job.rec
         deadline = asyncio.get_running_loop().time() + settings.request_timeout_s - rec.elapsed()
-        finished = False
         try:
             for data in head:
                 rec.chunks += has_token(data)
@@ -249,13 +285,13 @@ def create_app(upstream: Upstream, settings: GatewaySettings) -> FastAPI:
                 try:
                     # Per-event wait_for rather than asyncio.timeout(): a timeout scope must not
                     # span a `yield` in an async generator (the cancel could land in the caller).
-                    data = await asyncio.wait_for(anext(stream), timeout=max(remaining, 0.0))
+                    data = await asyncio.wait_for(anext(job.stream), timeout=max(remaining, 0.0))
                 except StopAsyncIteration:
                     break
                 rec.chunks += has_token(data)
                 yield _sse(data)
             yield b"data: [DONE]\n\n"
-            finished = True
+            job.finished = True
         except TimeoutError:
             rec.outcome = "timeout"
             yield _sse(json.dumps({"error": {"type": "timeout", "message": "request timed out"}}))
@@ -263,12 +299,8 @@ def create_app(upstream: Upstream, settings: GatewaySettings) -> FastAPI:
             rec.outcome = "upstream_error"
             yield _sse(json.dumps({"error": {"type": "upstream_error", "message": str(e)}}))
         finally:
-            # Reached on normal end, timeout, or client disconnect (generator closed/cancelled).
-            if not finished and rec.outcome == "ok":
-                rec.outcome = "cancelled"
-            await stream.aclose()
-            slot.release()
-            metrics.finish(rec)
+            # Normal end, timeout, or client disconnect (generator closed/cancelled).
+            await job.close()
 
     return app
 

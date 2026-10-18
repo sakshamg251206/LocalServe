@@ -1,4 +1,8 @@
+import asyncio
 import contextlib
+import json
+from collections.abc import MutableMapping
+from typing import Any
 
 import httpx
 
@@ -67,3 +71,41 @@ async def test_disconnect_before_first_token_cancels_upstream_and_frees_slot() -
         assert fake.cancelled == 1
         m = (await c.get("/metrics")).text
     assert 'localserve_requests_total{outcome="cancelled"} 1.0' in m
+
+
+async def test_slot_released_even_if_stream_never_starts() -> None:
+    """If sending the response headers fails, the relay generator never runs; cleanup must still."""
+    fake = FakeUpstream()
+    app = create_app(fake, GatewaySettings(max_concurrent=1, max_queue=0))
+    body = json.dumps(BODY).encode()
+    sent_body = False
+
+    async def receive() -> MutableMapping[str, Any]:
+        nonlocal sent_body
+        if not sent_body:
+            sent_body = True
+            return {"type": "http.request", "body": body, "more_body": False}
+        await asyncio.Event().wait()  # client never sends anything else
+        return {}
+
+    async def send(message: MutableMapping[str, Any]) -> None:
+        raise OSError("client went away")
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.4"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": "/v1/chat/completions",
+        "raw_path": b"/v1/chat/completions",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [(b"content-type", b"application/json")],
+        "client": ("127.0.0.1", 1),
+        "server": ("127.0.0.1", 80),
+    }
+    with contextlib.suppress(Exception):
+        await app(scope, receive, send)
+    assert app.state.admission.admitted == 0
+    assert app.state.admission.inflight == 0
