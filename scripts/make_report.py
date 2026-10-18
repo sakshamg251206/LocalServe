@@ -265,6 +265,10 @@ def overhead_block(s: dict[str, Any]) -> str:
 
 def findings(s: dict[str, Any]) -> str:
     out = []
+    pt = [c["prompt_tokens_mean"] for c in s["capacity_curve"] if not math.isnan(c["prompt_tokens_mean"])]
+    if pt:
+        out.append(f"- Mean prompt length (server-counted, incl. chat template): {sum(pt) / len(pt):.0f} tokens; "
+                   f"output fixed at 128 tokens.")  # fmt: skip
     for n in s["parallel"]:
         caps = [c for c in s["capacity"] if c["parallel"] == n and c["capacity_rps"] is not None]
         if caps:
