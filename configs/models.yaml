@@ -1,0 +1,20 @@
+# Model sources. Weights are downloaded at run time into models/ (git-ignored), never committed.
+# Each source is one F16 GGUF; every quant is produced locally from it with llama-quantize at the
+# pinned llama.cpp commit (configs/llama_cpp.yaml), with no importance matrix. One source and one
+# method mean the quant level is the only thing that differs between files.
+models:
+  qwen3-1.7b:
+    hf_repo: ggml-org/Qwen3-1.7B-GGUF
+    revision: daeb8e2d528a760970442092f6bf1e55c3b659eb
+    file: Qwen3-1.7B-f16.gguf
+    url: https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF/resolve/daeb8e2d528a760970442092f6bf1e55c3b659eb/Qwen3-1.7B-f16.gguf
+    sha256: f116fb8bb3237b7ee6acb2ea5058f4459ec6eb83f9bdbc890035935d45086a72
+    size_bytes: 4069679200
+    base_model: Qwen/Qwen3-1.7B
+    base_revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    # From the model cards of Qwen/Qwen3-1.7B and ggml-org/Qwen3-1.7B-GGUF (both "license: apache-2.0").
+    licence: Apache-2.0
+    licence_url: https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/LICENSE
+    licence_text_head: "Apache License, Version 2.0, January 2004, http://www.apache.org/licenses/"
+    quants: [Q8_0, Q5_K_M, Q4_K_M]
+    reference_quant: Q8_0

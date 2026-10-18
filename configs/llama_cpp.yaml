@@ -1,0 +1,6 @@
+# Pinned llama.cpp build. scripts/build_llama.sh checks out exactly this commit.
+repo: https://github.com/ggml-org/llama.cpp.git
+commit: 5aeac37a35b44fde4bdffaec9159f2fcb253b622
+build_number: b11719
+cmake_flags: [-DCMAKE_BUILD_TYPE=Release, -DGGML_METAL=ON, -DLLAMA_CURL=OFF, -DLLAMA_BUILD_TESTS=OFF]
+targets: [llama-server, llama-bench, llama-perplexity, llama-cli, llama-quantize]
