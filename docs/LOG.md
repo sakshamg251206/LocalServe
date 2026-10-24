@@ -62,3 +62,44 @@ What was run, what failed, what changed — in order. Benchmark numbers live in
   sweep; this is a small extra source of noise.
 - KLD reference logits cost ~300 KB per scored token (152k vocabulary); the full wikitext-2 test split would
   need tens of GB, more than the free disk. The KLD uses the first 100 chunks × 512 tokens (stated in the report).
+
+## 2026-10-24 — completion and verification
+
+- Read the full README and audited the existing MINIMUM implementation. Existing results contain
+  21 of 108 capacity points; no previous measurements were deleted or replaced.
+- Repaired the relocated uv environment (`uv sync --frozen --reinstall`) and rebuilt the pinned
+  llama.cpp after its absolute library paths pointed at the previous project directory.
+- Added regression tests and fixed report injection into initially empty Markdown blocks, serial
+  overhead parsing, use of recorded experiment configuration, and capacity claims from incomplete
+  grids. Missing rates/repeats now withhold capacity. Smoke reports do not update the published docs.
+- Fixed total timeout before the first token, truncated upstream streams being marked successful,
+  and reading usage on token-bearing events. Fixed-length responses with an observed token-count
+  mismatch now fail instead of inflating throughput.
+- Real-model integration passed (streaming, tool calling, cancellation). Isolated hardware smoke
+  capacity and overhead runs completed under `results/smoke-20261024`; these are plumbing checks,
+  not final measurements. One low-rate smoke window had no arrivals, illustrating sample noise.
+- Added `make measure` to run verification, quality, serving sweeps and reporting in sequence;
+  GPU measurement phases must not be run concurrently.
+- Full quality measurement started; remaining capacity, p70 and overhead measurements are still
+  required before this experiment can be called complete. Generated blocks report actual progress.
+- Verification after fixes: `make check` passed (53 offline tests, strict mypy and ruff).
+  A second real-model integration attempt during F16 reference generation failed after the
+  gateway first-token deadline (server log shows cancellation). The earlier isolated integration
+  passed. The detached `make measure RUN=minimum` supervisor waits for quality to finish and
+  reruns integration without concurrent GPU work before proceeding; progress is in
+  `results/measurement.out`, supervisor PID in `results/measurement.pid`.
+
+## 2026-10-25 — completed archive and publication
+
+- The ordered pipeline finished: 108 capacity points, nine eligible p70 runs, twelve open-loop
+  overhead runs and 100 serial pairs. All quality comparisons and single-stream benchmarks exist.
+  No point-execution failures were recorded; individual request failures remain in the raw data
+  and count against the SLO. Single-slot configurations fell below the rate grid, so no p70
+  follow-up was defined for them.
+- The isolated integration retry passed. The pipeline's check stage passed 53 offline tests,
+  strict mypy and ruff. Final publication verification is recorded in the Git history/CI.
+- The minimum scope is complete. The archive spans the original partial session and its resumed
+  session; it is not independent replication. Overhead uncertainty crosses the target, and
+  below-grid capacity is not a measured zero. These limitations are retained in the README.
+- Prepared a results-first README in the style of the author's other projects, with an SVG banner,
+  architecture, reproduction commands, evidence links and explicit provenance limitations.

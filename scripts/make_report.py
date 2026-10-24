@@ -79,12 +79,38 @@ def failures(raw: Path) -> list[dict[str, Any]]:
 
 def build_summary(run_dir: Path) -> dict[str, Any]:
     raw = run_dir / "raw"
-    sweep = yaml.safe_load((ROOT / "configs/sweep.yaml").read_text())
-    slo = yaml.safe_load((ROOT / "configs/slo.yaml").read_text())["chat"]["ttft_p95_s"]
-    models = yaml.safe_load((ROOT / "configs/models.yaml").read_text())["models"]
+    manifest_path = run_dir / "manifest.json"
+    recorded = json.loads(manifest_path.read_text()).get("configs", {}) if manifest_path.exists() else {}
+    configs = {
+        name: recorded.get(name) or yaml.safe_load((ROOT / f"configs/{name}.yaml").read_text())
+        for name in ("sweep", "slo", "models")
+    }
+    sweep = configs["sweep"]
+    sweep["rates"] = {int(k): v for k, v in sweep["rates"].items()}
+    slo = configs["slo"]["chat"]["ttft_p95_s"]
+    models = configs["models"]
+    if "models" in models:
+        models = models["models"]
     ref = models[sweep["model"]]["reference_quant"]
     cap_points = read_phase(raw, "capacity")
-    curve, caps = capacity_rows(cap_points, slo)
+    curve, observed_caps = capacity_rows(cap_points, slo)
+    caps = []
+    for q in sweep["quants"]:
+        for n in sweep["parallel"]:
+            expected = {(float(r), rep) for r in sweep["rates"][n] for rep in range(sweep["repeats"])}
+            observed = {
+                (p.meta["rate"], p.meta["rep"])
+                for p in cap_points
+                if p.meta["quant"] == q and p.meta["parallel"] == n
+            }
+            missing = sorted(expected - observed)
+            cap = next(
+                (c for c in observed_caps if c["quant"] == q and c["parallel"] == n),
+                {"quant": q, "parallel": n, "min_runs": 0},
+            )
+            if missing:
+                cap = {**cap, "capacity_rps": None, "bound": "incomplete"}
+            caps.append({**cap, "missing_points": [{"rate": r, "rep": rep} for r, rep in missing]})
     p70 = []
     for p in read_phase(raw, "p70"):
         p70.append(p)
@@ -225,7 +251,12 @@ def table2(s: dict[str, Any]) -> str:
     for c in s["capacity"]:
         q, n = c["quant"], c["parallel"]
         r = p70.get((q, n), {})
-        bound = {"exact": "", "lower_bound": " (≥, grid max)", "below_grid": "< lowest rate"}[c["bound"]]
+        bound = {
+            "exact": "",
+            "lower_bound": " (≥, grid max)",
+            "below_grid": "< lowest rate",
+            "incomplete": "incomplete",
+        }[c["bound"]]
         capv = f"{c['capacity_rps']:g}{bound}" if c["capacity_rps"] is not None else bound
         foot = max(
             (x["footprint_peak_bytes_max"] for x in curve if x["quant"] == q and x["parallel"] == n),
@@ -233,7 +264,7 @@ def table2(s: dict[str, Any]) -> str:
         )
         qrow = {**s["quality"].get(q, {}), "_is_ref": q == s["reference_quant"]}
         lines.append(
-            f"| {q} | {n} | {_kld(qrow)} | {capv} | {f(r.get('rate'), 3)} | {f(r.get('ttft_p95_s'), 2)} "
+            f"| {q} | {n} | {_kld(qrow)} | {capv} | {f(r.get('rate'), 3)} | {f(r.get('ttft_p95_slo_s'), 2)} "
             f"| {f(r.get('itl_p95_s'), 1, 1000)} | {f(r.get('output_tok_s_mean'), 1)} | {f(foot, 2, 1e-9)} | {c['min_runs']} |"
         )
     return "\n".join(lines)
@@ -291,6 +322,9 @@ def findings(s: dict[str, Any]) -> str:
 
 def data_caveats(s: dict[str, Any]) -> str:
     out = [f"- Measured points: {s['n_points']}. Failures recorded: {len(s['failures'])}."]
+    missing = sum(len(c.get("missing_points", [])) for c in s["capacity"])
+    if missing:
+        out.append(f"- Capacity sweep incomplete: {missing} required points missing; capacity withheld.")
     for fl in s["failures"]:
         out.append(f"  - {json.dumps(fl)}")
     out.append(f"- Runs where the OS swapped out > {s['swap_flag_mb']:.0f} MB during measurement: "
@@ -311,10 +345,10 @@ def inject(doc: Path, blocks: dict[str, str]) -> None:
         return
     text = doc.read_text()
     for name, body in blocks.items():
-        pat = re.compile(rf"(<!-- BEGIN:{name} -->\n).*?(\n<!-- END:{name} -->)", re.S)
+        pat = re.compile(rf"(<!-- BEGIN:{name} -->)\n.*?(<!-- END:{name} -->)", re.S)
 
         def fill(m: re.Match[str], body: str = body) -> str:
-            return m.group(1) + body + m.group(2)
+            return m.group(1) + "\n" + body + "\n" + m.group(2)
 
         text = pat.sub(fill, text)
     doc.write_text(text)
@@ -331,8 +365,9 @@ def main() -> None:
     blocks = {"table1": table1(s), "table2": table2(s), "overhead": overhead_block(s),
               "findings": findings(s), "data_caveats": data_caveats(s)}  # fmt: skip
     (run_dir / "tables.md").write_text("\n\n".join(f"## {k}\n\n{v}" for k, v in blocks.items()) + "\n")
-    for doc in (ROOT / "README.md", ROOT / "docs" / "REPORT.md"):
-        inject(doc, blocks)
+    if args.run_id == "minimum":
+        for doc in (ROOT / "README.md", ROOT / "docs" / "REPORT.md"):
+            inject(doc, blocks)
     print((run_dir / "tables.md").read_text())
 
 

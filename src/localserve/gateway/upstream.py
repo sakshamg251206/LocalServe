@@ -51,6 +51,7 @@ class HttpUpstream:
                 if data == "[DONE]":
                     return
                 yield data
+            raise httpx.RemoteProtocolError("upstream stream ended without [DONE]")
 
     async def complete_chat(self, body: dict[str, Any]) -> dict[str, Any]:
         r = await self._client.post("/v1/chat/completions", json=body)

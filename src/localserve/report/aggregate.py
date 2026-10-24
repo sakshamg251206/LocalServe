@@ -47,7 +47,11 @@ def read_point(path: Path) -> Point:
 
 
 def read_phase(raw: Path, phase: str) -> list[Point]:
-    return [read_point(p) for p in sorted((raw / phase).glob("*.jsonl")) if p.name != "failures.jsonl"]
+    return [
+        read_point(p)
+        for p in sorted((raw / phase).glob("*.jsonl"))
+        if p.name not in {"failures.jsonl", "serial_ab.jsonl"}
+    ]
 
 
 def _mean_sd(xs: Sequence[float]) -> tuple[float, float]:

@@ -84,7 +84,7 @@ async def send_chat(
                         res.itl_s.append(now - last)
                     last = now
                     res.n_events += 1
-                elif '"usage"' in data or '"error"' in data:
+                if '"usage"' in data or '"error"' in data:
                     obj = json.loads(data)
                     if obj.get("error"):
                         res.error = str(obj["error"])[:200]
@@ -93,6 +93,12 @@ async def send_chat(
                         res.completion_tokens = obj["usage"].get("completion_tokens")
             else:
                 res.error = res.error or "stream ended without [DONE]"
+            if (
+                body.get("ignore_eos")
+                and res.completion_tokens is not None
+                and res.completion_tokens != body.get("max_tokens")
+            ):
+                res.error = res.error or "completion token count differs from requested fixed length"
     except TimeoutError:
         res.status, res.error = 0, "client_timeout"
     except httpx.HTTPError as e:

@@ -1,0 +1,314 @@
+{
+  "run_id": "minimum",
+  "configs": {
+    "sweep": {
+      "model": "qwen3-1.7b",
+      "quants": [
+        "Q8_0",
+        "Q5_K_M",
+        "Q4_K_M"
+      ],
+      "parallel": [
+        1,
+        4
+      ],
+      "ctx_per_slot": 2048,
+      "rates": {
+        "1": [
+          0.05,
+          0.1,
+          0.15,
+          0.2,
+          0.3,
+          0.4
+        ],
+        "4": [
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.7
+        ]
+      },
+      "repeats": 3,
+      "duration_s": 60,
+      "warmup_s": 15,
+      "cooldown_s": 15,
+      "max_tokens": 128,
+      "prompt_words": 150,
+      "request_timeout_s": 60,
+      "seed_base": 1000,
+      "order_seed": 7,
+      "gateway": {
+        "max_queue": 64
+      },
+      "ports": {
+        "llama": 8080,
+        "gateway": 8000
+      },
+      "p70_fraction": 0.7,
+      "overhead": {
+        "quant": "Q4_K_M",
+        "parallel": 4,
+        "serial_pairs": 100,
+        "serial_max_tokens": 32,
+        "rates": [
+          0.2,
+          0.4
+        ]
+      }
+    },
+    "slo": {
+      "chat": {
+        "ttft_p95_s": 1.0
+      },
+      "rag": {
+        "ttft_p95_s": 2.5
+      }
+    },
+    "llama_cpp": {
+      "repo": "https://github.com/ggml-org/llama.cpp.git",
+      "commit": "5aeac37a35b44fde4bdffaec9159f2fcb253b622",
+      "build_number": "b11719",
+      "cmake_flags": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DGGML_METAL=ON",
+        "-DLLAMA_CURL=OFF",
+        "-DLLAMA_BUILD_TESTS=OFF"
+      ],
+      "targets": [
+        "llama-server",
+        "llama-bench",
+        "llama-perplexity",
+        "llama-cli",
+        "llama-quantize"
+      ]
+    },
+    "models": {
+      "qwen3-1.7b": {
+        "hf_repo": "ggml-org/Qwen3-1.7B-GGUF",
+        "revision": "daeb8e2d528a760970442092f6bf1e55c3b659eb",
+        "file": "Qwen3-1.7B-f16.gguf",
+        "url": "https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF/resolve/daeb8e2d528a760970442092f6bf1e55c3b659eb/Qwen3-1.7B-f16.gguf",
+        "sha256": "f116fb8bb3237b7ee6acb2ea5058f4459ec6eb83f9bdbc890035935d45086a72",
+        "size_bytes": 4069679200,
+        "base_model": "Qwen/Qwen3-1.7B",
+        "base_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        "licence": "Apache-2.0",
+        "licence_url": "https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/LICENSE",
+        "licence_text_head": "Apache License, Version 2.0, January 2004, http://www.apache.org/licenses/",
+        "quants": [
+          "Q8_0",
+          "Q5_K_M",
+          "Q4_K_M"
+        ],
+        "reference_quant": "Q8_0"
+      }
+    }
+  },
+  "model_files": {
+    "qwen3-1.7b-F16": {
+      "path": "Qwen3-1.7B-f16.gguf",
+      "sha256": "f116fb8bb3237b7ee6acb2ea5058f4459ec6eb83f9bdbc890035935d45086a72",
+      "bytes": 4069679200
+    },
+    "qwen3-1.7b-Q8_0": {
+      "path": "qwen3-1.7b-Q8_0.gguf",
+      "sha256": "9860780f3a1fab1f8f909a1b549ea3e62c22d19ab1a492b3a1026b38c5bd3ec3",
+      "bytes": 2165039200
+    },
+    "qwen3-1.7b-Q5_K_M": {
+      "path": "qwen3-1.7b-Q5_K_M.gguf",
+      "sha256": "a260adecc01f7e2492ef6fa260f72436d19a9dfc04d72286e2f860141d2f2846",
+      "bytes": 1471805536
+    },
+    "qwen3-1.7b-Q4_K_M": {
+      "path": "qwen3-1.7b-Q4_K_M.gguf",
+      "sha256": "ade935fea001b0fffa74a552419b60f65b20f45793a5ccaa69863d2de9d61d66",
+      "bytes": 1282439264
+    }
+  },
+  "phases": {
+    "capacity": {
+      "started": {
+        "time": 1792848679.961441,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 3083780096,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      },
+      "finished": {
+        "time": 1792857294.9224682,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 4168155136,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      }
+    },
+    "p70": {
+      "started": {
+        "time": 1792857296.865522,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 4009541632,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      },
+      "finished": {
+        "time": 1792858070.884088,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 3903045632,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      }
+    },
+    "overhead": {
+      "started": {
+        "time": 1792858071.719105,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 3775463424,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      },
+      "finished": {
+        "time": 1792859690.206351,
+        "git": {
+          "commit": "7bd39573c6fcf44bdc3d6a7a61f3fa606861c51d",
+          "dirty": true
+        },
+        "hardware": {
+          "chip": "Apple M2",
+          "model": "Mac14,2",
+          "mem_bytes": 8589934592,
+          "cpu_perf_cores": "4",
+          "cpu_eff_cores": "4",
+          "macos": "27.0.1",
+          "mem_available_bytes_at_start": 4399185920,
+          "power_source": "Now drawing from 'AC Power'"
+        },
+        "python": "3.12.4",
+        "packages": {
+          "fastapi": "0.146.0",
+          "uvicorn": "0.54.0",
+          "httpx": "0.28.1",
+          "numpy": "2.5.4",
+          "psutil": "7.2.2",
+          "prometheus-client": "0.26.0",
+          "matplotlib": "3.11.2",
+          "pyyaml": "6.0.3"
+        },
+        "llama_cpp": ""
+      }
+    }
+  }
+}

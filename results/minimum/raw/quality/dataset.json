@@ -1,0 +1,12 @@
+{
+  "name": "wikitext-2-raw-v1 (test split)",
+  "url": "https://huggingface.co/datasets/ggml-org/ci/resolve/927b3642933080f1b0e811e2f916e14c292992f9/wikitext-2-raw-v1.zip",
+  "zip_sha256": "ef7edb566e3e2b2d31b29c1fdb0c89a4cc683597484c3dc2517919c615435a11",
+  "member": "wikitext-2-raw/wiki.test.raw",
+  "licence": "CC BY-SA 3.0 (Merity et al., 2016)",
+  "test_sha256": "173c87a53759e0201f33e0ccf978e510c2042d7f2cb78229d9a50d79b9e7dd08",
+  "test_lines": 4358,
+  "test_bytes": 1290590,
+  "ctx": 512,
+  "chunks": 100
+}

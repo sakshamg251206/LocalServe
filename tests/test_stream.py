@@ -58,3 +58,13 @@ async def test_models_endpoint_proxies_upstream() -> None:
     ):
         r = await c.get("/v1/models")
     assert r.json()["data"][0]["id"] == "fake-model"
+
+
+async def test_total_deadline_applies_before_first_token() -> None:
+    fake = FakeUpstream(first_delay=0.3)
+    settings = GatewaySettings(first_token_timeout_s=1, request_timeout_s=0.05)
+    app = create_app(fake, settings)
+    async with serve(app) as url, httpx.AsyncClient(base_url=url) as c:
+        r = await c.post("/v1/chat/completions", json={**BODY, "stream": True})
+    assert r.status_code == 504
+    assert app.state.admission.admitted == 0

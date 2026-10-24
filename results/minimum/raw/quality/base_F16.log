@@ -1,0 +1,15 @@
+$ /Users/sakshamgarg/Desktop/PROJECTS/LocalServer/localserve/.vendor/llama.cpp/build/bin/llama-perplexity -m /Users/sakshamgarg/Desktop/PROJECTS/LocalServer/localserve/models/Qwen3-1.7B-f16.gguf -f /Users/sakshamgarg/Desktop/PROJECTS/LocalServer/localserve/data/wiki.test.raw --kl-divergence-base /Users/sakshamgarg/Desktop/PROJECTS/LocalServer/localserve/data/base_logits_F16.kld -c 512 --chunks 100 -ngl 99
+# exit=0 seconds=244.1
+1.27 minutes
+[1]11.4825,[2]15.0871,[3]14.9713,[4]15.5065,[5]15.5024,[6]15.6215,[7]16.0324,[8]16.7345,[9]17.8376,[10]18.3731,[11]18.4924,[12]18.5639,[13]19.1888,[14]18.7741,[15]18.6939,[16]19.0624,[17]18.0015,[18]18.1602,[19]17.9880,[20]17.9954,[21]17.7209,[22]17.7479,[23]17.0774,[24]16.1821,[25]15.7774,[26]15.3460,[27]14.8926,[28]14.7372,[29]14.7981,[30]14.7422,[31]14.5423,[32]14.5271,[33]14.2822,[34]14.5622,[35]14.6529,[36]14.8939,[37]15.1236,[38]15.2243,[39]15.1849,[40]15.2893,[41]15.2509,[42]15.1636,[43]15.2864,[44]15.3389,[45]15.3260,[46]15.2740,[47]15.5779,[48]15.6972,[49]15.6119,[50]15.7041,[51]15.7775,[52]15.8167,[53]15.9029,[54]15.9463,[55]15.9454,[56]16.0742,[57]15.9866,[58]16.0395,[59]16.1164,[60]16.1975,[61]16.2358,[62]16.2839,[63]16.3687,[64]16.4939,[65]16.6796,[66]16.8059,[67]16.9484,[68]16.8556,[69]16.8342,[70]16.7992,[71]16.8186,[72]16.9155,[73]16.9521,[74]16.9499,[75]16.8345,[76]16.7987,[77]16.8405,[78]16.8370,[79]16.7055,[80]16.7130,[81]16.6428,[82]16.7221,[83]16.6848,[84]16.6442,[85]16.7011,[86]16.8630,[87]16.9658,[88]16.9351,[89]16.9183,[90]16.8823,[91]16.9489,[92]16.9038,[93]17.0258,[94]17.0648,[95]17.0152,[96]16.9953,[97]16.9587,[98]16.9618,[99]16.9288,[100]17.0557,
+
+
+0.00.314.193 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.07.505.666 I cmn          init: llama threadpool init, n_threads = 4
+0.07.832.339 I 
+0.07.833.160 I system_info: n_threads = 4 (n_threads_batch = 4) / 8 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | MATMUL_INT8 = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | 
+0.07.834.970 I perplexity: saving all logits to /Users/sakshamgarg/Desktop/PROJECTS/LocalServer/localserve/data/base_logits_F16.kld
+0.07.834.981 I perplexity: tokenizing the input ..
+0.08.120.018 I perplexity: tokenization took 285.033 ms
+0.08.120.139 I perplexity: calculating perplexity over 100 chunks, n_ctx=512, batch_size=2048, n_seq=4
+0.11.189.306 I perplexity: 3.05 seconds per pass - ETA 4.00.249.573 I Final estimate: PPL = 17.0557 +/- 0.37829

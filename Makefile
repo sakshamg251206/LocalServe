@@ -39,3 +39,12 @@ quality:
 
 report:  # regenerates summary.json, figures and doc tables from committed raw results
 	$(UV) python scripts/make_report.py --run-id $(RUN)
+
+# Ordered even with `make -j`: quality and serving must not compete for the GPU.
+.PHONY: measure
+measure:
+	$(MAKE) check
+	$(MAKE) integration
+	$(MAKE) quality RUN=$(RUN)
+	$(MAKE) sweep RUN=$(RUN)
+	$(MAKE) report RUN=$(RUN)

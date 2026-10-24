@@ -240,7 +240,7 @@ def create_app(upstream: Upstream, settings: GatewaySettings) -> FastAPI:
         stream = upstream.stream_chat(body)
 
         async def first_token() -> list[str]:
-            async with asyncio.timeout(settings.first_token_timeout_s):
+            async with asyncio.timeout(min(settings.first_token_timeout_s, settings.request_timeout_s)):
                 await _wait_slot(slot, rec)
                 return await _until_first_token(stream)
 

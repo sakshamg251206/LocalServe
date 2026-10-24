@@ -1,0 +1,17 @@
+{
+  "ppl_q": 17.060838,
+  "ppl_q_err": 0.377782,
+  "ppl_base": 16.788648,
+  "ppl_base_err": 0.364657,
+  "ln_ppl_ratio": 0.016083,
+  "ln_ppl_ratio_err": 0.001951,
+  "kld_mean": 0.001467,
+  "kld_mean_err": 2.2e-05,
+  "kld_max": 0.191148,
+  "kld_p99": 0.013493,
+  "kld_median": 0.000639,
+  "rms_dp_pct": 1.123,
+  "rms_dp_pct_err": 0.022,
+  "same_top_p_pct": 98.373,
+  "same_top_p_pct_err": 0.079
+}

@@ -260,11 +260,16 @@ def phase_overhead(cfg: dict[str, Any], run_dir: Path) -> None:
 def update_manifest(run_dir: Path, cfg: dict[str, Any], phase: str, event: str) -> None:
     path = run_dir / "manifest.json"
     man: dict[str, Any] = json.loads(path.read_text()) if path.exists() else {}
+    configs = {k: cfg[k] for k in ("sweep", "slo", "llama_cpp", "models")}
+    # JSON normalizes YAML integer mapping keys to strings.
+    normalized = json.loads(json.dumps(configs))
+    if man.get("configs") and man["configs"] != normalized:
+        raise ValueError("run configuration changed; use a new --run-id to avoid mixing experiments")
     lock_path = ROOT / "models/models.lock.json"
     man.update(
         {
             "run_id": run_dir.name,
-            "configs": {k: cfg[k] for k in ("sweep", "slo", "llama_cpp", "models")},
+            "configs": configs,
             "model_files": json.loads(lock_path.read_text()) if lock_path.exists() else {},
         }
     )
